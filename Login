@@ -1,0 +1,105 @@
+using System;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using System.Windows.Input;
+
+namespace LoginDemo;
+
+public sealed class LoginViewModel : INotifyPropertyChanged
+{
+    string _userName = string.Empty;
+    string _password = string.Empty;
+    bool   _isPasswordVisible;
+
+    public string UserName
+    {
+        get => _userName;
+        set => Set(ref _userName, value);
+    }
+
+    public string Password
+    {
+        get => _password;
+        set => Set(ref _password, value);
+    }
+
+    public bool IsPasswordVisible
+    {
+        get => _isPasswordVisible;
+        set { Set(ref _isPasswordVisible, value); OnPropertyChanged(nameof(ToggleHint)); }
+    }
+
+    public string ToggleHint => IsPasswordVisible ? "🙈 Hide" : "👁 Show";
+
+    public ICommand TogglePasswordCommand { get; }
+
+    public LoginViewModel() =>
+        TogglePasswordCommand = new RelayCommand(_ => IsPasswordVisible = !IsPasswordVisible);
+
+    #region INotifyPropertyChanged helpers
+    public event PropertyChangedEventHandler? PropertyChanged;
+    void OnPropertyChanged([CallerMemberName] string? n = null) =>
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(n));
+    bool Set<T>(ref T field, T value, [CallerMemberName] string? n = null)
+    {
+        if (Equals(field, value)) return false;
+        field = value; OnPropertyChanged(n); return true;
+    }
+    #endregion
+
+    #region tiny RelayCommand
+    sealed class RelayCommand(Action<object?> exec) : ICommand
+    {
+        readonly Action<object?> _exec = exec;
+        public bool CanExecute(object? _)   => true;
+        public void Execute(object? p)      => _exec(p);
+        public event EventHandler? CanExecuteChanged { add { } remove { } }
+    }
+    #endregion
+}
+
+
+
+<Window x:Class="LoginDemo.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:LoginDemo"
+        Title="Login" Height="180" Width="320">
+  <Window.DataContext>
+    <local:LoginViewModel/>
+  </Window.DataContext>
+
+  <Window.Resources>
+    <!-- built-in converter, no code -->
+    <BooleanToVisibilityConverter x:Key="Bool2Vis"/>
+  </Window.Resources>
+
+  <Grid Margin="20" RowDefinitions="Auto Auto" ColumnDefinitions="Auto * Auto">
+    <!-- User name -->
+    <TextBlock Text="User:" VerticalAlignment="Center"/>
+    <TextBox  Grid.Column="1" Text="{Binding UserName, UpdateSourceTrigger=PropertyChanged}"
+              Margin="6 0 0 8"/>
+
+    <!-- Password (masked) -->
+    <PasswordBox x:Name="PwdMasked" Grid.Row="1" Grid.Column="1" Margin="6 0 0 0"
+                 PasswordChanged="PwdMasked_PasswordChanged"
+                 Visibility="{Binding IsPasswordVisible, Converter={StaticResource Bool2Vis}, ConverterParameter=false}"/>
+
+    <!-- Password (plain) -->
+    <TextBox Grid.Row="1" Grid.Column="1" Margin="6 0 0 0"
+             Text="{Binding Password, UpdateSourceTrigger=PropertyChanged}"
+             Visibility="{Binding IsPasswordVisible, Converter={StaticResource Bool2Vis}}"/>
+
+    <!-- Toggle button -->
+    <Button Grid.Row="1" Grid.Column="2" Content="{Binding ToggleHint}"
+            Command="{Binding TogglePasswordCommand}" Margin="6 0 0 0"/>
+  </Grid>
+</Window>
+
+
+// keep ViewModel and PasswordBox in sync (PasswordBox has no bindable Password)
+    void PwdMasked_PasswordChanged(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is LoginViewModel vm)
+            vm.Password = PwdMasked.Password;
+    }
