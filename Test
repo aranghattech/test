@@ -22,3 +22,47 @@ internal static class LogicAreaClassifier
         return SMConstants.LogicArea;
     }
 }
+
+private readonly Dictionary<string, string> _areaIds = new Dictionary<string, string>();
+
+private void PersistVirtualAreas()
+{
+    // C# 7 interpolated strings are fine.
+    string inputId  = $"{ControllerName}.{SMConstants.InputArea}";
+    string logicId  = $"{ControllerName}.{SMConstants.LogicArea}";
+    string outputId = $"{ControllerName}.{SMConstants.OutputArea}";
+
+    _areaIds[SMConstants.InputArea]  = inputId;
+    _areaIds[SMConstants.LogicArea]  = logicId;
+    _areaIds[SMConstants.OutputArea] = outputId;
+
+    var virtualPoints = new[]
+    {
+        new SMLogicalPointInfo(
+                logicPointFullName : SMConstants.InputArea,
+                logicPoinShorttName: SMConstants.InputArea,
+                logicTypeInfo      : SMConstants.InputArea,
+                logicPointID       : inputId,
+                executionContainer : ControllerName,
+                isTag              : true,
+                description        : SMConstants.InputArea,
+                navigation_ID      : null),
+
+        new SMLogicalPointInfo(
+                SMConstants.LogicArea, SMConstants.LogicArea,
+                SMConstants.LogicArea, logicId, ControllerName,
+                true, SMConstants.LogicArea, null),
+
+        new SMLogicalPointInfo(
+                SMConstants.OutputArea, SMConstants.OutputArea,
+                SMConstants.OutputArea, outputId, ControllerName,
+                true, SMConstants.OutputArea, null),
+    };
+
+    // Push the stubs to the same list used for “real” points,
+    // then emit them through the normal AddLogicalPoint pipeline.
+    ListSMLogicalPointInfo.AddRange(virtualPoints);
+
+    foreach (var vp in virtualPoints)
+        AddLogicalPoint(vp);          // writes <LogicalPoint/>
+}
