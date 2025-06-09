@@ -1,25 +1,22 @@
-// ───────────────  SMConstants.cs  ───────────────
-public const string InputArea   = "InputArea";
-public const string LogicArea   = "LogicArea";
-public const string OutputArea  = "OutputArea";
-public const int    AssocType_Section = 99;   // pick a spare value
-
-// ───────────────  LogicAreaClassifier.cs  ───────────────
-public static class LogicAreaClassifier
+/// <summary>Central helper that tells whether a point belongs to Input / Logic / Output.</summary>
+internal static class LogicAreaClassifier
 {
-    private static readonly HashSet<string> _input     = new(StringComparer.OrdinalIgnoreCase)
-        { "Symbol:AI", "Symbol:DI", ".eVT_AI", ".eVT_DI" /* …extend… */ };
+    // NOTE: target-typed “new()” is C# 9 — use the full generic form:
+    private static readonly HashSet<string> _input =
+        new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        { "Symbol:AI", "Symbol:DI", ".eVT_AI", ".eVT_DI" /* extend as required */ };
 
-    private static readonly HashSet<string> _output    = new(StringComparer.OrdinalIgnoreCase)
-        { "Symbol:AO", "Symbol:DO", ".eVT_AO", ".eVT_DO" /* …extend… */ };
+    private static readonly HashSet<string> _output =
+        new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        { "Symbol:AO", "Symbol:DO", ".eVT_AO", ".eVT_DO" /* extend as required */ };
 
-    /// <summary>Return one of SMConstants.InputArea | LogicArea | OutputArea.</summary>
-    public static string GetAreaFor(string logicType)
+    internal static string GetAreaFor(string logicType)
     {
-        if (_input.Any(t => logicType.Contains(t, StringComparison.OrdinalIgnoreCase)))
+        // C# 7.3 / .NET 4.8 has no string.Contains 2-arg overload; fall back to IndexOf.
+        if (_input.Any(t => logicType?.IndexOf(t, StringComparison.OrdinalIgnoreCase) >= 0))
             return SMConstants.InputArea;
 
-        if (_output.Any(t => logicType.Contains(t, StringComparison.OrdinalIgnoreCase)))
+        if (_output.Any(t => logicType?.IndexOf(t, StringComparison.OrdinalIgnoreCase) >= 0))
             return SMConstants.OutputArea;
 
         return SMConstants.LogicArea;
