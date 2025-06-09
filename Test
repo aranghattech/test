@@ -1,0 +1,27 @@
+// ───────────────  SMConstants.cs  ───────────────
+public const string InputArea   = "InputArea";
+public const string LogicArea   = "LogicArea";
+public const string OutputArea  = "OutputArea";
+public const int    AssocType_Section = 99;   // pick a spare value
+
+// ───────────────  LogicAreaClassifier.cs  ───────────────
+public static class LogicAreaClassifier
+{
+    private static readonly HashSet<string> _input     = new(StringComparer.OrdinalIgnoreCase)
+        { "Symbol:AI", "Symbol:DI", ".eVT_AI", ".eVT_DI" /* …extend… */ };
+
+    private static readonly HashSet<string> _output    = new(StringComparer.OrdinalIgnoreCase)
+        { "Symbol:AO", "Symbol:DO", ".eVT_AO", ".eVT_DO" /* …extend… */ };
+
+    /// <summary>Return one of SMConstants.InputArea | LogicArea | OutputArea.</summary>
+    public static string GetAreaFor(string logicType)
+    {
+        if (_input.Any(t => logicType.Contains(t, StringComparison.OrdinalIgnoreCase)))
+            return SMConstants.InputArea;
+
+        if (_output.Any(t => logicType.Contains(t, StringComparison.OrdinalIgnoreCase)))
+            return SMConstants.OutputArea;
+
+        return SMConstants.LogicArea;
+    }
+}
