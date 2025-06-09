@@ -66,3 +66,41 @@ private void PersistVirtualAreas()
     foreach (var vp in virtualPoints)
         AddLogicalPoint(vp);          // writes <LogicalPoint/>
 }
+
+public void AddLogicalPoint(SMLogicalPointInfo info)
+{
+    // Existing code that builds XElement lp …
+    var lp = new XElement(SMConstants.LogicalPoint);
+    lp.SetAttributeValue(SMConstants.FullName,  info.LogicPointFullName);
+    lp.SetAttributeValue(SMConstants.ShortName, info.LogicPoinShorttName);
+    lp.SetAttributeValue(SMConstants.Type,      info.LogicTypeInfo);
+    lp.SetAttributeValue(SMConstants.Id,        info.LogicPointID);
+    lp.SetAttributeValue(SMConstants.ExecutionContainer, info.ExecutionContainer);
+    lp.SetAttributeValue(SMConstants.IsTag,     info.IsTag ? "1" : "0");
+    if (!string.IsNullOrEmpty(info.Description))
+        lp.SetAttributeValue(SMConstants.Description, info.Description);
+    if (!string.IsNullOrEmpty(info.Navigation_ID))
+        lp.SetAttributeValue(SMConstants.Navigation_ID, info.Navigation_ID);
+
+    SM_XMLBuilder.AddLogicalPoint(lp);
+
+    // ── NEW: Section association ────────────────────────────
+    string areaName = LogicAreaClassifier.GetAreaFor(info.LogicTypeInfo);
+    string areaId;
+    if (!_areaIds.TryGetValue(areaName, out areaId))
+        return;                 // points created before the area stubs? shouldn’t happen.
+
+    // Use C# 7 tuple style for easy Id creation (a valid 7.3 feature).
+    var assocId = $"{areaId}.{info.LogicPointID}.{SMConstants.AssocType_Section}";
+
+    var assoc = new XElement(SMConstants.Association);
+    assoc.SetAttributeValue(SMConstants.Type,           SMConstants.AssocType_Section);
+    assoc.SetAttributeValue(SMConstants.SrcEnd,         areaId);
+    assoc.SetAttributeValue(SMConstants.SrcEndType,     (int)EntityType.Logical);
+    assoc.SetAttributeValue(SMConstants.TargetEnd,      info.LogicPointID);
+    assoc.SetAttributeValue(SMConstants.TargetEndType,  (int)EntityType.Logical);
+    assoc.SetAttributeValue(SMConstants.Id,             assocId);
+
+    SM_XMLBuilder.AddLogicalAssociation(assoc);
+}
+
